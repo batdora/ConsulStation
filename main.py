@@ -2,6 +2,7 @@ from typing import Optional, Union
 from fastapi import FastAPI
 from fastapi.params import Body
 from pydantic import BaseModel
+from random import randrange
 
 app = FastAPI()
 
@@ -11,8 +12,7 @@ class Post(BaseModel):
     published: bool = True
     rating: Optional[int] = None
 
-# For optional requests, use a defaulted field; for full optional default to None
-# For str valued requests, if you use int; it converts int to str automatically. Look out.
+my_posts=[{"title":"title1", "content":"content 1", "id": 1},{"title":"title 2", "content":"content 2", "id": 2} ]
 
 @app.get("/")
 def read_root():
@@ -20,11 +20,12 @@ def read_root():
 
 @app.get("/posts")
 def get_posts():
-    return {"message": "this is your post"}
+    return {"data": my_posts}
 
-@app.post("/createpost")
-def create_post(new_post:Post):
-    print(new_post.published)
-    new_post.dict()
-    return {"data":new_post}
+@app.post("/posts")
+def create_post(post:Post):
+    post_dict = post.dict()
+    post_dict["id"]= randrange(0,1000)
+    my_posts.append(post_dict)
+    return {"data":post}
 
