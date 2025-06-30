@@ -31,3 +31,5 @@ This is how you use the ID in CRUD operations, for example a read operation:
 @app.get("/posts/{post_id}")
 
 DON'T FORGET: FastAPI searches for the path from top to bottom, so if you have a path that matches multiple routes, the first one defined will be used.
+
+To create a python package, you need to create a directory with an `__init__.py` file inside it. This file can be empty or contain initialization code for the package.
