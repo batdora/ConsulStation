@@ -40,7 +40,18 @@ def create_post(post:Post):
 # Get ID specific post
 @app.get("/posts/{id}")
 def get_post(id: int):
-    found_post=find_post(id)
-    if not found_post:
+    post=find_post(id)
+    if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
-    return {"message": found_post}
+    return {"message": post}
+
+# Delete Post
+@app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_post(id: int):
+    post = find_post(id)
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
+    else:
+        my_posts.remove(post)
+        return Response(status_code=status.HTTP_404_NOT_FOUND)
+    
