@@ -1,7 +1,0 @@
-If you closed VS use this first to activate venv:
-
-source venvFastAPI/bin/activate
-
-Use this to start the API server:
-
-uvicorn main:app --reload 
