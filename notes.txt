@@ -1,0 +1,20 @@
+This is called a "decorator" in Python, it is used to modify the behavior of a function or method:
+@app.something
+
+To use it as fastapi decorator, you need to import FastAPI first:
+from typing import Union
+from fastapi import FastAPI
+app = FastAPI()
+
+CRUD applications are common in web development. They are composed of Create, Read, Update, and Delete operations. FastAPI makes it easy to implement these operations with its routing system.
+
+For Create operations, you can use the `@app.post` decorator to define a route that handles POST requests. This is typically used to create new resources.
+For Read operations, you can use the `@app.get` decorator to define a route that handles GET requests. This is used to retrieve resources.
+For Update operations, you can use the `@app.put` decorator to define a route that handles PUT requests. This is used to update existing resources, and it usually requires sending the entire resource data to be updated.
+You can also use the `@app.patch` decorator for partial updates, which allows you to modify only specific fields of a resource without sending the entire resource data.
+For Delete operations, you can use the `@app.delete` decorator to define a route that handles DELETE requests. This is used to remove resources.
+
+When creating a new resource, an ID will typically be generated automatically by the server.
+You will use this ID to reference the resource in subsequent operations, such as reading, updating, or deleting it.
+This is how you use the ID in CRUD operations, for example a read operation:
+@app.get("/posts/{post_id}")
