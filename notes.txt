@@ -6,6 +6,17 @@ from typing import Union
 from fastapi import FastAPI
 app = FastAPI()
 
+FastAPI uses BaseModel from Pydantic to define data models. This allows you to create structured data types that can be used in your API endpoints. For example, you can define a Post model like this:
+from pydantic import BaseModel
+class Post(BaseModel):
+    title: str
+    content: str
+    published: bool = True
+    rating: Optional[int] = None
+
+For optional requests, use a defaulted field; for full optional default to None
+For str valued requests, if you use int; it converts int to str automatically. Look out.
+
 CRUD applications are common in web development. They are composed of Create, Read, Update, and Delete operations. FastAPI makes it easy to implement these operations with its routing system.
 
 For Create operations, you can use the `@app.post` decorator to define a route that handles POST requests. This is typically used to create new resources.
