@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from fastapi import FastAPI, Response, status, HTTPException
 from fastapi.params import Body
 from pydantic import BaseModel
@@ -24,12 +24,12 @@ def find_post(id):
 def read_root():
     return {"message": "welcome to my url lol"}
 
-# Get all posts
+# GET all posts
 @app.get("/posts")
 def get_posts():
     return {"data": my_posts}
 
-# Create a post
+# CREATE a post
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_post(post:Post):
     post_dict = post.dict()
@@ -37,7 +37,7 @@ def create_post(post:Post):
     my_posts.append(post_dict)
     return {"data":post}
 
-# Get ID specific post
+# GET ID specific post
 @app.get("/posts/{id}")
 def get_post(id: int):
     post=find_post(id)
@@ -45,7 +45,7 @@ def get_post(id: int):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
     return {"message": post}
 
-# Delete Post
+# DELETE Post
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
     post = find_post(id)
@@ -55,3 +55,27 @@ def delete_post(id: int):
         my_posts.remove(post)
         return Response(status_code=status.HTTP_404_NOT_FOUND)
     
+# Update with PUT
+@app.put("/posts/{id}")
+def update_post_1(id: int, updated_post: Post):
+    post = find_post(id)
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
+    updated_post_dict= updated_post.dict()
+    updated_post_dict["id"] = id
+    index = my_posts.index(post)
+    my_posts[index] = updated_post_dict
+    return {"data":updated_post_dict}
+
+# Update with PATCH
+@app.patch("/posts/{id}")
+def update_post_2(id: int, updated_part: dict):
+    post = find_post(id)
+    if not post:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
+    
+    for key, value in updated_part.items():
+        if key in post:
+            post[key] = value
+
+    return {"data":post}
