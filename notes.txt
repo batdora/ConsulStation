@@ -29,3 +29,5 @@ When creating a new resource, an ID will typically be generated automatically by
 You will use this ID to reference the resource in subsequent operations, such as reading, updating, or deleting it.
 This is how you use the ID in CRUD operations, for example a read operation:
 @app.get("/posts/{post_id}")
+
+DON'T FORGET: FastAPI searches for the path from top to bottom, so if you have a path that matches multiple routes, the first one defined will be used.

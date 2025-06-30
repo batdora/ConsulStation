@@ -14,14 +14,22 @@ class Post(BaseModel):
 
 my_posts=[{"title":"title1", "content":"content 1", "id": 1},{"title":"title 2", "content":"content 2", "id": 2} ]
 
+def find_post(id):
+    for i in my_posts:
+        if id == i["id"]:
+            return i
+
+
 @app.get("/")
 def read_root():
     return {"message": "welcome to my url lol"}
 
+# Get all posts
 @app.get("/posts")
 def get_posts():
     return {"data": my_posts}
 
+# Create a post
 @app.post("/posts")
 def create_post(post:Post):
     post_dict = post.dict()
@@ -29,3 +37,8 @@ def create_post(post:Post):
     my_posts.append(post_dict)
     return {"data":post}
 
+# Get ID specific post
+@app.get("/posts/{id}")
+def get_post(id: int):
+    found_post=find_post(id)
+    return {"message": found_post}
