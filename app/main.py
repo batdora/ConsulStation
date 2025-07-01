@@ -85,34 +85,20 @@ def get_post(id: int):
 # DELETE Post
 @app.delete("/posts/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int):
-    post = find_post(id)
+    cur.execute("""DELETE FROM posts WHERE id = %s RETURNING *""", (str(id),)) # type: ignore
+    post = cur.fetchone()
+    conn.commit()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
     else:
-        my_posts.remove(post)
-        return Response(status_code=status.HTTP_404_NOT_FOUND)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     
 # Update with PUT
 @app.put("/posts/{id}")
-def update_post_1(id: int, updated_post: Post):
-    post = find_post(id)
-    if not post:
+def update_post_1(id: int, post: Post):
+    cur.execute("""UPDATE posts SET title= %s, content= %s, published= %s WHERE id = %s RETURNING *""", (post.title,post.content,str(post.published),str(id)))
+    updated_post = cur.fetchone() # type: ignore
+    conn.commit()
+    if not updated_post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
-    updated_post_dict= updated_post.dict()
-    updated_post_dict["id"] = id
-    index = my_posts.index(post)
-    my_posts[index] = updated_post_dict
-    return {"data":updated_post_dict}
-
-# Update with PATCH
-@app.patch("/posts/{id}")
-def update_post_2(id: int, updated_part: dict):
-    post = find_post(id)
-    if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
-    
-    for key, value in updated_part.items():
-        if key in post:
-            post[key] = value
-
-    return {"data":post}
+    return {"data":updated_post}
