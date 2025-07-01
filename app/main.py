@@ -45,22 +45,6 @@ while True:
         print("Error :", error)
         time.sleep(2)
 
-try:
-    cur.execute("""
-    INSERT INTO posts (title, content)
-    VALUES (%s, %s)
-    RETURNING id
-    """, ("Test", "Content Test"))
-
-    inserted_id = cur.fetchone()["id"] # type: ignore
-    conn.commit()
-
-    cur.execute("DELETE FROM posts WHERE id = %s", (inserted_id,))
-    conn.commit()
-
-    print("Insert/Delete Test Successful")
-except Exception as e:
-    print("Insert failed:", e)
 
 my_posts=[{"title":"title1", "content":"content 1", "id": 1},{"title":"title 2", "content":"content 2", "id": 2} ]
 
@@ -84,15 +68,16 @@ def get_posts():
 # CREATE a post
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
 def create_post(post:Post):
-    post_dict = post.dict()
-    post_dict["id"]= randrange(0,1000)
-    my_posts.append(post_dict)
-    return {"data":post}
+    cur.execute("""INSERT INTO posts (title, content, published) VALUES (%s,%s,%s) RETURNING *""",(post.title,post.content,post.published))
+    new_post = cur.fetchone()
+    conn.commit()
+    return {"data":new_post}
 
 # GET ID specific post
 @app.get("/posts/{id}")
 def get_post(id: int):
-    post=find_post(id)
+    cur.execute("""SELECT * FROM posts WHERE id = %s""", (str(id),)) # type: ignore
+    post = cur.fetchone()
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
     return {"message": post}
