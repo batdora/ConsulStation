@@ -5,6 +5,9 @@ from pydantic import BaseModel
 from random import randrange
 import psycopg
 from psycopg.rows import dict_row
+import time
+import signal
+import sys
 
 app = FastAPI()
 
@@ -13,19 +16,51 @@ class Post(BaseModel):
     content: str
     published: bool = True
 
+# Define SIGINT handler
+def handle_interrupt(signum, frame):
+    print("\n KeyboardInterrupt caught. Exiting.")
+    sys.exit(0)
+# Register the handler
+signal.signal(signal.SIGINT, handle_interrupt)
+
+# Fetch Password from file
+with open("app/db_credentials.txt", "r") as f:
+        db_password = f.read().strip()
+
+
+while True:
+    try:
+        conn = psycopg.connect(
+            host="localhost",
+            dbname="fastapi",
+            user="postgres",
+            password=db_password,
+            row_factory=dict_row  # type: ignore
+        )
+        cur = conn.cursor()
+        print("Database Connection SUCCESSFUL")
+        break
+    except Exception as error:
+        print("Connection to Database FAILED")
+        print("Error :", error)
+        time.sleep(2)
+
 try:
-    conn = psycopg.connect(
-        host="localhost",
-        dbname="fastapi",
-        user="fastapi_user",
-        password="password123",
-        row_factory=dict_row # type: ignore
-    )
-    cur = conn.cursor()
-    print("Database Connection SUCCESSFUL")
-except Exception as error:
-    print("Connection to Database FAILED")
-    print("Error :", error)
+    cur.execute("""
+    INSERT INTO posts (title, content)
+    VALUES (%s, %s)
+    RETURNING id
+    """, ("Test", "Content Test"))
+
+    inserted_id = cur.fetchone()["id"] # type: ignore
+    conn.commit()
+
+    cur.execute("DELETE FROM posts WHERE id = %s", (inserted_id,))
+    conn.commit()
+
+    print("Insert/Delete Test Successful")
+except Exception as e:
+    print("Insert failed:", e)
 
 my_posts=[{"title":"title1", "content":"content 1", "id": 1},{"title":"title 2", "content":"content 2", "id": 2} ]
 
@@ -42,7 +77,9 @@ def read_root():
 # GET all posts
 @app.get("/posts")
 def get_posts():
-    return {"data": my_posts}
+    cur.execute("""SELECT * FROM posts""")
+    posts= cur.fetchall()
+    return {"data": posts}
 
 # CREATE a post
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
