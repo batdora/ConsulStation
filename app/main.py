@@ -11,7 +11,7 @@ import signal
 import sys
 from sqlmodel import SQLModel
 from app.database import engine, SessionDep
-import app.models
+import app.models as models
 from typing import Annotated
 
 SQLModel.metadata.create_all(bind=engine)
@@ -111,5 +111,6 @@ def update_post_1(id: int, post: Post):
     return {"data":updated_post}
 
 @app.get("/sqlTest")
-def test(session: SessionDep):
-    return{"message":"success"}
+def test(db: SessionDep):
+    posts= db.query(models.Post).all() # type: ignore
+    return{"data":posts}

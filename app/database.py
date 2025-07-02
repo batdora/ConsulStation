@@ -1,18 +1,20 @@
-from sqlmodel import create_engine, Session
-from fastapi import Depends
-from typing import Annotated
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
 # Fetch Password from file
 with open("app/db_credentials.txt", "r") as f:
         db_password = f.read().strip()
 
-database_url = f"postgresql+psycopg://postgres:{db_password}@localhost:5432/fastapi"
+SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg://postgres:{db_password}@localhost:5432/fastapi"
 
-engine = create_engine(database_url)
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Create what talks to the DB
-def get_session():
-    with Session(engine) as session:
-        yield session
+Base = declarative_base()
 
-SessionDep = Annotated[Session, Depends(get_session)]
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
