@@ -1,3 +1,4 @@
+from turtle import title
 from typing import Optional, Union, Any
 from fastapi import FastAPI, Response, status, HTTPException, Depends, Query
 from fastapi.params import Body
@@ -11,6 +12,8 @@ import sys
 from app.database import engine, get_db
 import app.models as models
 from sqlalchemy.orm import Session
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -108,7 +111,16 @@ def read_root():
     #return {"data":updated_post}
 
 
-@app.get("/sqlTest")
-def test(db: Session = Depends(get_db)):
-    posts= db.query(models.Post).all() # type: ignore
-    return{"data":posts}
+"""CRUD Operations using SQLAlchemy"""
+@app.get("/posts")
+def get_posts(db: Session = Depends(get_db)):
+    posts = db.query(models.Post).all()
+    return {"data": posts}
+
+@app.post("/posts", status_code=status.HTTP_201_CREATED)
+def create_post(post: Post, db: Session = Depends(get_db)):
+    new_post = models.Post(**post.model_dump())
+    db.add(new_post)
+    db.commit()
+    db.refresh(new_post)
+    return {"data": new_post}
