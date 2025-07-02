@@ -1,26 +1,25 @@
-from turtle import title
-from typing import Optional, Union, Any
 from fastapi import FastAPI, Response, status, HTTPException, Depends, Query
-from fastapi.params import Body
 from pydantic import BaseModel
-from random import randrange
-import psycopg
-from psycopg.rows import dict_row
-import time
 import signal
 import sys
 from app.database import engine, get_db
 import app.models as models
 from sqlalchemy.orm import Session
+import app.schemas as schemas
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-class Post(BaseModel):
-    title: str
-    content: str
-    published: bool = True
+
+# Connect to the PostgreSQL database using psycopg
+# Uncomment the following block to establish a connection using psycopg
+""""
+from random import randrange
+import psycopg
+from fastapi.params import Body
+from psycopg.rows import dict_row
+import time
 
 # Define SIGINT handler
 def handle_interrupt(signum, frame):
@@ -32,7 +31,6 @@ signal.signal(signal.SIGINT, handle_interrupt)
 # Fetch Password from file
 with open("app/db_credentials.txt", "r") as f:
         db_password = f.read().strip()
-
 
 while True:
     try:
@@ -50,21 +48,15 @@ while True:
         print("Connection to Database FAILED")
         print("Error :", error)
         time.sleep(2)
+"""
 
-
-my_posts=[{"title":"title1", "content":"content 1", "id": 1},{"title":"title 2", "content":"content 2", "id": 2} ]
-
-def find_post(id):
-    for i in my_posts:
-        if id == i["id"]:
-            return i
-
-
+# Define a root endpoint
 @app.get("/")
 def read_root():
     return {"message": "welcome to my url lol"}
 
 """CRUD Operations using psycopg and SQL code"""
+# Uncomment the following block to use psycopg for CRUD operations
 # GET all posts
 #@app.get("/posts")
 #def get_posts():
@@ -112,7 +104,6 @@ def read_root():
 
 
 """CRUD Operations using SQLAlchemy"""
-
 # GET all posts
 @app.get("/posts")
 def get_posts(db: Session = Depends(get_db)):
@@ -129,7 +120,7 @@ def get_post(id: int, db: Session = Depends(get_db)):
 
 # POST a new post
 @app.post("/posts", status_code=status.HTTP_201_CREATED)
-def create_post(post: Post, db: Session = Depends(get_db)):
+def create_post(post: schemas.Post, db: Session = Depends(get_db)):
     new_post = models.Post(**post.model_dump())
     db.add(new_post)
     db.commit()
@@ -148,7 +139,7 @@ def delete_post(id: int, db: Session = Depends(get_db)):
 
 # Update with PUT
 @app.put("/posts/{id}")
-def update_post(id: int, post: Post, db: Session = Depends(get_db)):
+def update_post(id: int, post: schemas.Post, db: Session = Depends(get_db)):
     updated_post = db.query(models.Post).filter(models.Post.id == id)
     if not updated_post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
