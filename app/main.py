@@ -1,5 +1,6 @@
 from typing import Optional, Union, Any
-from fastapi import FastAPI, Response, status, HTTPException
+from fastapi import FastAPI, Response, status, HTTPException, Depends, Query
+from sqlmodel import Session, SQLModel, select
 from fastapi.params import Body
 from pydantic import BaseModel
 from random import randrange
@@ -8,6 +9,12 @@ from psycopg.rows import dict_row
 import time
 import signal
 import sys
+from sqlmodel import SQLModel
+from app.database import engine, SessionDep
+import app.models
+from typing import Annotated
+
+SQLModel.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -102,3 +109,7 @@ def update_post_1(id: int, post: Post):
     if not updated_post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
     return {"data":updated_post}
+
+@app.get("/sqlTest")
+def test(session: SessionDep):
+    return{"message":"success"}
