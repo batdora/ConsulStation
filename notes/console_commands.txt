@@ -8,3 +8,6 @@ uvicorn main:app --reload
 
 After the move to the new directory, you can run the server with:
 uvicorn app.main:app --reload
+
+Use this to create a secret key:
+openssl rand -hex 32
