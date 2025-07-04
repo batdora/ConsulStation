@@ -19,6 +19,15 @@ def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.g
     posts = db.query(models.Post).all()
     return posts
 
+# GET posts created by the current user
+@router.get("/my_posts", response_model=List[schemas.PostResponse])
+def get_my_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
+    posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()  # type: ignore
+    if not posts:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You have no posts")
+    return posts
+
+
 # GET ID specific post
 @router.get("/{id}",response_model=schemas.PostResponse)
 def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
