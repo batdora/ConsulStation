@@ -31,6 +31,10 @@ def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)
 def create_post(post: schemas.PostCreate, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
     new_post = models.Post(**post.model_dump())
+    
+    # Set the owner_id to the current user's id
+    new_post.owner_id = current_user.id # type: ignore
+
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
@@ -40,8 +44,16 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db), current
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_post(id: int, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
     post = db.query(models.Post).filter(models.Post.id == id).first()
+    
+    # Check if the post exists
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
+    
+    # Check if the current user is the owner of the post
+    if post.owner_id != current_user.id:  # type: ignore
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to delete this post")
+    
+    # Delete the post
     db.delete(post)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -50,8 +62,14 @@ def delete_post(id: int, db: Session = Depends(get_db), current_user: int = Depe
 @router.put("/{id}",response_model=schemas.PostResponse)
 def update_post(id: int, post: schemas.PostCreate, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
     updated_post = db.query(models.Post).filter(models.Post.id == id)
+
+    # Check if the post exists
     if not updated_post.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
+    
+    # Check if the current user is the owner of the post
+    if updated_post.first().owner_id != current_user.id:  # type: ignore
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not authorized to update this post")
     
     updated_post.update(post.model_dump(), synchronize_session=False) # type: ignore
     db.commit()
