@@ -14,5 +14,5 @@ class Settings(BaseSettings): # type: ignore
         "env_file": ".env",
         "extra": "ignore"}
 
-settings = Settings()
+settings = Settings() # type: ignore
 
