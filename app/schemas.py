@@ -2,6 +2,8 @@ from pydantic import BaseModel, EmailStr
 from datetime import datetime
 from typing import Optional
 
+from app.database import Base
+
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -39,6 +41,13 @@ class PostResponse(PostBase):
     class Config:
         orm_mode = True
 
+class PostVoteResponse(BaseModel):
+    post: PostResponse
+    likes: int = 0  # Default to 0 if no votes are found
+
+    class Config: # type: ignore
+        orm_mode = True
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -46,6 +55,13 @@ class Token(BaseModel):
 # Change this if you want to include more data in the token
 class TokenData(BaseModel):
     id: Optional[int] = None
+
+    class Config:
+        orm_mode = True
+
+class Vote(BaseModel):
+    post_id: int
+    direction: bool # True for upvote, False for downvote
 
     class Config:
         orm_mode = True

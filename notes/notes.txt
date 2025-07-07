@@ -44,3 +44,17 @@ SQLALCHEMY_DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URL")
 
 To set an environment variable in your terminal, you can use the following command:
 export SQLALCHEMY_DATABASE_URL="whatever_your_database_url_is"
+
+The difference between schemas and models in FastAPI is that schemas are used for data validation and serialization, while models are used for database interactions.
+Here is what it looks like:
+
+Front-end ---(Schemas)---> FastAPI (API) ---(Models)---> Database
+
+For schemas, you can use Pydantic's `BaseModel` to define the structure of your data.
+The structure will give you the ability to validate incoming data and serialize outgoing data.
+If the data does not match the schema, FastAPI will automatically return a 422 Unprocessable Entity error with details about the validation errors.
+
+For models, you can use SQLAlchemy to define the structure of your database tables.
+The structure will give you the ability to interact with the database, such as creating, reading, updating, and deleting records.
+
+Don't forget to auth the new request in Postman with bearer token.
