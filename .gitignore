@@ -1,3 +1,4 @@
 venvFastAPI/
 __pycache__/
 app/db_credentials.txt
+.env

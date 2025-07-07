@@ -1,8 +1,6 @@
-from fastapi import FastAPI, Response, status, HTTPException, Depends, Query
-from app.database import engine, get_db
-from sqlalchemy.orm import Session
-from typing import List
-from . import models, schemas, utils
+from fastapi import FastAPI
+from app.database import engine
+from . import models
 from .routers import post, user, auth
 
 models.Base.metadata.create_all(bind=engine)

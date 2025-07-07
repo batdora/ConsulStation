@@ -5,13 +5,14 @@ from datetime import datetime, timedelta
 from . import schemas, database, models
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
+import os
+from app.config import settings
 
 OAuth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
-SECRET_KEY = "f20ab82fdae38f45932617c31365c6bd813af59fe07369fceea4a4f7ee252d8a"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
-
+SECRET_KEY = settings.secret_key  # type: ignore
+ALGORITHM = settings.algorithm  # type: ignore
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes  # type: ignore
 def create_access_token(data: dict):
     to_encode = data.copy()
     
@@ -25,7 +26,7 @@ def create_access_token(data: dict):
 
 def verify_access_token(token: str, credentials_exception):
     try:    
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM]) # type: ignore
         id: str = payload.get("user_id") # type: ignore
         if id is None:
             raise credentials_exception

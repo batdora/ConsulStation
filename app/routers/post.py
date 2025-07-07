@@ -2,7 +2,8 @@ from .. import models, schemas, oath2
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
 from sqlalchemy.orm import Session
 from ..database import get_db
-from typing import List
+from typing import List, Optional
+
 
 router = APIRouter(
     prefix="/posts",
@@ -15,14 +16,14 @@ router = APIRouter(
 
 # GET all posts
 @router.get("/", response_model=List[schemas.PostResponse])
-def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user), limit: int = 10):
-    posts = db.query(models.Post).limit(limit).all()
+def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
+    posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
     return posts
 
 # GET posts created by the current user
 @router.get("/my_posts", response_model=List[schemas.PostResponse])
-def get_my_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
-    posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).all()  # type: ignore
+def get_my_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
+    posts = db.query(models.Post).filter(models.Post.owner_id == current_user.id).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()  # type: ignore
     if not posts:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You have no posts")
     return posts

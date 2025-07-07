@@ -1,13 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+import os
+from app.config import settings
 
-# Fetch Password from file
-with open("app/db_credentials.txt", "r") as f:
-        db_password = f.read().strip()
+SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg://{settings.database_username}:{settings.database_password}@{settings.database_hostname}:{settings.database_port}/{settings.database_name}"
 
-SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg://postgres:{db_password}@localhost:5432/fastapi"
-
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
+engine = create_engine(SQLALCHEMY_DATABASE_URL) # type: ignore
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()

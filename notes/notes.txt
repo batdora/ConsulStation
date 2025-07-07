@@ -33,3 +33,14 @@ This is how you use the ID in CRUD operations, for example a read operation:
 DON'T FORGET: FastAPI searches for the path from top to bottom, so if you have a path that matches multiple routes, the first one defined will be used.
 
 To create a python package, you need to create a directory with an `__init__.py` file inside it. This file can be empty or contain initialization code for the package.
+
+The way db queries work is sequential; so if you want a search for a keyword in a query you have to do it BEFORE limit and offset.
+
+To be secure about credentials and sensitive information, you can use environment variables. This way, you can keep your credentials out of your codebase and avoid hardcoding them.
+To do this in FastAPI, you can use the `os` module to read environment variables. For example:
+If you want to use a database URL stored in an environment variable, you can do it like this:
+import os
+SQLALCHEMY_DATABASE_URL = os.getenv("SQLALCHEMY_DATABASE_URL")
+
+To set an environment variable in your terminal, you can use the following command:
+export SQLALCHEMY_DATABASE_URL="whatever_your_database_url_is"
