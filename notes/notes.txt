@@ -58,3 +58,7 @@ For models, you can use SQLAlchemy to define the structure of your database tabl
 The structure will give you the ability to interact with the database, such as creating, reading, updating, and deleting records.
 
 Don't forget to auth the new request in Postman with bearer token.
+
+To allow frontend and backend to communicate, you need to set up CORS (Cross-Origin Resource Sharing) in your FastAPI application.
+You can do this by adding the `CORSMiddleware` to your FastAPI app.
+However, you should be careful about which origins you allow to access your API, as this can expose your API to security risks.
