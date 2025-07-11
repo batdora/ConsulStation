@@ -2,3 +2,6 @@ venvFastAPI/
 venv_fastapi_prod/
 __pycache__/
 .env
+docker-compose-dev.yml
+docker-compose-prod.yml
+Dockerfile
