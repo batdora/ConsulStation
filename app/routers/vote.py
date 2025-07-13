@@ -26,7 +26,14 @@ def vote(vote: schemas.Vote, db: Session = Depends(get_db), current_user: int = 
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="You have already liked this post")
         
         # Create a new vote
-        new_vote = models.Vote(post_id=vote.post_id, user_id=current_user.id) # type: ignore
+
+        # Check if the user is the owner of the post
+        if post.owner_id == current_user.id:  # type: ignore
+            # If the user is the owner, set like_by_owner to True
+            new_vote = models.Vote(post_id=vote.post_id, user_id=current_user.id, like_by_owner=True) # type: ignore
+        else:
+            # If the user is not the owner, set like_by_owner to False
+            new_vote = models.Vote(post_id=vote.post_id, user_id=current_user.id, like_by_owner=False) # type: ignore
         db.add(new_vote)
         db.commit()
         return {"message": "Post liked successfully"}

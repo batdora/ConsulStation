@@ -10,6 +10,8 @@ class Post(Base):
     content = Column(String, nullable=False)
     published = Column(Boolean, server_default="true", nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    reply_to = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), nullable=True)  # Allow None for root posts
+    original_post_owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)  # Owner of the original post
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     owner = relationship("User")
 
@@ -27,6 +29,8 @@ class Vote(Base):
 
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    like_by_owner = Column(Boolean, default=False)  # Indicates if the post owner liked their own post
     
     # In User model (important!)
     user = relationship("User")
