@@ -8,6 +8,9 @@ router = APIRouter(
     prefix="/vote",
     tags=["Vote"]
 )
+
+print("Vote router loaded")
+
 @router.post("/", status_code=status.HTTP_201_CREATED)
 def vote(vote: schemas.Vote, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
     if vote.direction not in [True, False]:
@@ -34,6 +37,9 @@ def vote(vote: schemas.Vote, db: Session = Depends(get_db), current_user: int = 
         else:
             # If the user is not the owner, set like_by_owner to False
             new_vote = models.Vote(post_id=vote.post_id, user_id=current_user.id, like_by_owner=False) # type: ignore
+        
+        post.likes += 1 # type: ignore
+
         db.add(new_vote)
         db.commit()
         return {"message": "Post liked successfully"}
@@ -42,6 +48,8 @@ def vote(vote: schemas.Vote, db: Session = Depends(get_db), current_user: int = 
         if not vote_query:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You have not liked this post")
         
+        post.likes -= 1 # type: ignore
+
         # Delete the vote
         db.delete(vote_query)
         db.commit()

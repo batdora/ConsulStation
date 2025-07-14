@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional
 
 from app.database import Base
 
@@ -41,12 +41,29 @@ class PostResponse(PostBase):
     class Config:
         orm_mode = True
 
-class PostVoteResponse(BaseModel):
-    post: PostResponse
+class PostSummaryResponse(BaseModel):
+    id: int
+    title: str
+    content: str
+    published: bool
+    created_at: datetime
+    owner: UserResponse
+
     likes: int = 0  # Default to 0 if no votes are found
+    direct_reply_count: int
+    total_reply_count: int
+
+    class Config:
+        orm_mode = True
+
+class PostDetailResponse(PostSummaryResponse):
+   
+    replies: Optional[List[PostSummaryResponse]] = None  # List of replies if any
 
     class Config: # type: ignore
-        orm_mode = True
+        pass
+
+PostDetailResponse.update_forward_refs()  # Update forward references for nested models
 
 class Token(BaseModel):
     access_token: str

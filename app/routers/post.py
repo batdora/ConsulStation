@@ -1,7 +1,8 @@
+from hmac import new
 from .. import models, schemas, oath2
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy.orm import Session, selectinload, joinedload
+from sqlalchemy import func, or_
 from ..database import get_db
 from typing import List, Optional
 
@@ -11,42 +12,63 @@ router = APIRouter(
     tags=["Posts"]
 )
 
+print("Post router loaded")
+
 # In this example we require authorization for all post operations.
 # If you want to allow unauthenticated access to some endpoints, you can remove the Depends
 # from oath2.get_current_user() dependency from those endpoints.
 
 # GET all posts
-@router.get("/", response_model=List[schemas.PostVoteResponse])
-def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
-    #posts = db.query(models.Post).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all()
+@router.get("/", response_model=List[schemas.PostSummaryResponse])
+def get_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = "", user_id: Optional[int] = None):
+    q = (
+        db.query(models.Post)
+          .options(selectinload(models.Post.owner))
+          .filter(models.Post.reply_to.is_(None))
+    )
 
-    # Join Post and Vote tables to get the count of likes for each post
-    # Using isouter=True to include posts with no votes (likes)
-    posts_and_votes= (db.query(models.Post, func.count(models.Vote.post_id).label("likes")).join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True).group_by(models.Post.id).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all())  # type: ignore
-    
-    # Return a list of dictionaries with post and likes count because response_model expects a list of PostVoteResponse
-    return [ {"post": post, "likes": likes} for post, likes in posts_and_votes]  # type: ignore
+    if user_id is not None:
+        q = q.filter(models.Post.owner_id == user_id)
 
-# GET posts created by the current user
-@router.get("/users_posts", response_model=List[schemas.PostVoteResponse])
-def get_my_posts(db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user), limit: int = 10, skip: int = 0, search: Optional[str] = ""):
-    posts_and_votes_raw= (db.query(models.Post, func.count(models.Vote.post_id).label("likes")).join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True).group_by(models.Post.id).filter(models.Post.owner_id == current_user.id).filter(models.Post.title.contains(search)).limit(limit).offset(skip).all())  # type: ignore
-    
-    posts= [{"post": post, "likes": likes} for post, likes in posts_and_votes_raw]
-    if not posts:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You have no posts")
+    if search:
+        term = f"%{search}%"
+        q = q.filter(
+            or_(
+                models.Post.title.ilike(term),
+                models.Post.content.ilike(term),
+            )
+        )
+
+    posts = (
+        q.order_by(models.Post.created_at.desc())
+         .offset(skip)
+         .limit(limit)
+         .all()
+    )
+
     return posts
 
-
 # GET ID specific post
-@router.get("/{id}",response_model=schemas.PostVoteResponse)
+@router.get("/{id}",response_model=schemas.PostDetailResponse)
 def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
-    posts_and_votes_raw= (db.query(models.Post, func.count(models.Vote.post_id).label("likes")).join(models.Vote, models.Post.id == models.Vote.post_id, isouter=True).group_by(models.Post.id).filter(models.Post.id == id).first()) # type: ignore
-    
-    post= [{"post": post, "likes": likes} for post, likes in posts_and_votes_raw] # type: ignore
+    post = (
+        db.query(models.Post)
+          .options(
+              selectinload(models.Post.owner),
+              # load each reply and its owner
+              selectinload(models.Post.replies)
+                  .selectinload(models.Post.owner),
+          )
+          .filter(models.Post.id == id)
+          .first()
+    )
     if not post:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"The post with the id: {id} was not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
+
     return post
+
+
+
 
 # POST a new post
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)
@@ -55,13 +77,15 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db), current
     
     # Set the owner_id to the current user's id
     new_post.owner_id = current_user.id # type: ignore
+    new_post.original_post_owner_id = current_user.id # type: ignore
 
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
     return new_post
 
-@router.post("/{id}", status_code=status.HTTP_201_CREATED)
+# POST a reply to a post
+@router.post("/{id}/reply", status_code=status.HTTP_201_CREATED, response_model=schemas.PostDetailResponse)
 def create_reply(id: int, post: schemas.PostCreate, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
     original_post = db.query(models.Post).filter(models.Post.id == id).first()
     
@@ -76,6 +100,14 @@ def create_reply(id: int, post: schemas.PostCreate, db: Session = Depends(get_db
     new_reply.original_post_owner_id = original_post.owner_id  # Set the original post's owner id
 
     db.add(new_reply)
+
+    original_post.direct_reply_count += 1  # type: ignore # Increment the direct reply count of the original post
+    
+    ancestor = original_post
+    while ancestor.parent:  # type: ignore # Traverse up to the root post
+        ancestor.total_reply_count += 1  # type: ignore # Increment the total reply count
+        ancestor = ancestor.parent  # type: ignore # Move to the parent post
+
     db.commit()
     db.refresh(new_reply)
     return new_reply
