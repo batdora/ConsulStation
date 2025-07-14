@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedForum - A Community for Doctors</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5; /* Light gray background */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+            border-radius: 10px;
+        }
+
+        /* Modal specific styles */
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none; /* Hidden by default */
+        }
+        .modal-content {
+            transform: translateY(-50%);
+            animation: fadeInDown 0.3s ease-out;
+        }
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-70%);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(-50%);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <div id="loginModal" class="modal-overlay fixed inset-0 flex items-center justify-center z-50">
+        <div class="modal-content bg-white rounded-lg shadow-2xl p-6 w-11/12 max-w-md relative">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Login to MedForum</h2>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label for="loginEmail" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                    <input type="email" id="loginEmail" name="email" class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="your@example.com" required>
+                </div>
+                <div class="mb-6">
+                    <label for="loginPassword" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="loginPassword" name="password" class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="••••••••" required>
+                </div>
+                <div id="loginError" class="text-red-500 text-sm mb-4 text-center" style="display: none;"></div>
+                <button type="submit" class="w-full bg-blue-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-blue-600 transition duration-200 ease-in-out transform hover:scale-105">Login</button>
+            </form>
+            <p class="text-center text-gray-600 text-sm mt-4">Don't have an account? <a href="#" id="showRegister" class="text-blue-500 hover:underline">Register here</a></p>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal-overlay fixed inset-0 flex items-center justify-center z-50">
+        <div class="modal-content bg-white rounded-lg shadow-2xl p-6 w-11/12 max-w-md relative">
+            <button id="closeRegisterModalBtn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Register for MedForum</h2>
+            <form id="registerForm">
+                <div class="mb-4">
+                    <label for="registerEmail" class="block text-gray-700 text-sm font-bold mb-2">Email</label>
+                    <input type="email" id="registerEmail" name="email" class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="your@example.com" required>
+                </div>
+                <div class="mb-6">
+                    <label for="registerPassword" class="block text-gray-700 text-sm font-bold mb-2">Password</label>
+                    <input type="password" id="registerPassword" name="password" class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="••••••••" required>
+                </div>
+                <div id="registerError" class="text-red-500 text-sm mb-4 text-center" style="display: none;"></div>
+                <button type="submit" class="w-full bg-blue-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-blue-600 transition duration-200 ease-in-out transform hover:scale-105">Register</button>
+            </form>
+            <p class="text-center text-gray-600 text-sm mt-4">Already have an account? <a href="#" id="showLogin" class="text-blue-500 hover:underline">Login here</a></p>
+        </div>
+    </div>
+
+    <header class="bg-white shadow-sm py-3 px-4 md:px-6 flex items-center justify-between sticky top-0 z-10">
+        <div class="flex items-center space-x-4">
+            <button id="menuToggle" class="lg:hidden text-gray-600 hover:text-gray-900 focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <a href="#" class="flex items-center space-x-2">
+                <i class="fas fa-stethoscope text-blue-600 text-2xl"></i>
+                <span class="text-2xl font-bold text-gray-800">MedForum</span>
+            </a>
+        </div>
+        <div class="relative flex-grow mx-4 max-w-lg hidden md:block">
+            <input type="text" placeholder="Search MedForum" class="w-full pl-10 pr-4 py-2 rounded-full bg-gray-100 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-300">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+        </div>
+        <div class="flex items-center space-x-4">
+            <button id="createPostBtnHeader" class="hidden md:block bg-blue-500 text-white px-4 py-2 rounded-full shadow-md hover:bg-blue-600 transition duration-200 ease-in-out transform hover:scale-105">
+                <i class="fas fa-plus mr-2"></i>Create Post
+            </button>
+            <div class="relative group">
+                <button class="flex items-center space-x-2 p-2 rounded-full hover:bg-gray-100 focus:outline-none">
+                    <img src="https://placehold.co/32x32/cccccc/ffffff?text=DR" alt="User Avatar" class="w-8 h-8 rounded-full border border-gray-300">
+                    <span id="loggedInUserName" class="text-gray-700 font-medium hidden sm:block">Guest</span>
+                    <i class="fas fa-chevron-down text-gray-500 text-sm hidden sm:block"></i>
+                </button>
+                <div class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 ease-in-out z-20">
+                    <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100"><i class="fas fa-user-circle mr-2"></i>Profile</a>
+                    <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100"><i class="fas fa-cog mr-2"></i>Settings</a>
+                    <hr class="my-1 border-gray-200">
+                    <a href="#" id="logoutBtn" class="block px-4 py-2 text-gray-700 hover:bg-gray-100"><i class="fas fa-sign-out-alt mr-2"></i>Logout</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 md:px-6 py-6 lg:flex lg:space-x-6">
+
+        <aside id="leftSidebar" class="fixed inset-y-0 left-0 z-20 w-64 bg-white shadow-xl lg:relative lg:w-64 lg:shadow-none lg:translate-x-0 transform -translate-x-full transition-transform duration-300 ease-in-out p-4 pt-6 lg:pt-4">
+            <div class="flex justify-between items-center mb-6 lg:hidden">
+                <span class="text-xl font-bold text-gray-800">MedForum</span>
+                <button id="closeMenu" class="text-gray-600 hover:text-gray-900 focus:outline-none">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <nav>
+                <h2 class="text-xs font-semibold text-gray-500 uppercase mb-3">Feeds</h2>
+                <ul>
+                    <li class="mb-2">
+                        <a href="#" class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-home text-lg"></i>
+                            <span class="font-medium">Home</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-fire text-lg"></i>
+                            <span class="font-medium">Popular</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-chart-line text-lg"></i>
+                            <span class="font-medium">Trending</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <h2 class="text-xs font-semibold text-gray-500 uppercase mt-6 mb-3">Communities</h2>
+                <ul>
+                    <li class="mb-2">
+                        <a href="#" class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-heartbeat text-lg"></i>
+                            <span class="font-medium">Cardiology</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-brain text-lg"></i>
+                            <span class="font-medium">Neurology</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-bone text-lg"></i>
+                            <span class="font-medium">Orthopedics</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-plus-square text-lg"></i>
+                            <span class="font-medium">General Practice</span>
+                        </a>
+                    </li>
+                    <li class="mb-2">
+                        <a href="#" class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-blue-100 hover:text-blue-700 transition duration-150 ease-in-out">
+                            <i class="fas fa-globe text-lg"></i>
+                            <span class="font-medium">All Communities</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </aside>
+
+        <section class="flex-1 lg:max-w-[700px] xl:max-w-[800px] mx-auto lg:mx-0">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6 hidden lg:block">Latest Discussions</h1>
+
+            <button id="createPostBtnMobile" class="lg:hidden w-full bg-blue-500 text-white px-4 py-3 rounded-lg shadow-md hover:bg-blue-600 transition duration-200 ease-in-out transform hover:scale-105 flex items-center justify-center mb-6">
+                <i class="fas fa-plus mr-2"></i>Create New Post
+            </button>
+
+            <div id="postsContainer">
+                <div class="text-center text-gray-500 py-10" id="loadingPosts" style="display: none;">Loading posts...</div>
+                <div class="text-center text-red-500 py-10" id="postsError" style="display: none;">Error loading posts. Please try again later.</div>
+                <div class="text-center text-gray-500 py-10" id="noPosts" style="display: none;">No posts found. Be the first to create one!</div>
+            </div>
+        </section>
+
+        <aside class="hidden lg:block w-72 flex-shrink-0">
+            <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3">About MedForum</h2>
+                <p class="text-sm text-gray-600 mb-4">
+                    A dedicated online community for verified medical professionals to connect, collaborate, and share insights on clinical cases, research, and the daily practice of medicine.
+                </p>
+                <button id="createPostBtnSidebar" class="w-full bg-blue-500 text-white px-4 py-3 rounded-lg shadow-md hover:bg-blue-600 transition duration-200 ease-in-out transform hover:scale-105 flex items-center justify-center">
+                    <i class="fas fa-plus mr-2"></i>Create Post
+                </button>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <h2 class="text-lg font-semibold text-gray-800 mb-3">Rules & Guidelines</h2>
+                <ul class="text-sm text-gray-600 list-disc list-inside space-y-1">
+                    <li>Be respectful and professional.</li>
+                    <li>Maintain patient confidentiality (HIPAA compliant).</li>
+                    <li>No personal medical advice.</li>
+                    <li>Cite sources when discussing research.</li>
+                    <li>Keep discussions constructive.</li>
+                </ul>
+            </div>
+        </aside>
+    </main>
+
+    <div id="createPostModal" class="modal-overlay fixed inset-0 flex items-center justify-center z-50">
+        <div class="modal-content bg-white rounded-lg shadow-2xl p-6 w-11/12 max-w-lg relative">
+            <button id="closeModalBtn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-2xl focus:outline-none">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Create New Post</h2>
+            <form id="newPostForm">
+                <div class="mb-4">
+                    <label for="postTitle" class="block text-gray-700 text-sm font-bold mb-2">Title</label>
+                    <input type="text" id="postTitle" name="postTitle" class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="A concise and clear title" required>
+                </div>
+                <div class="mb-6">
+                    <label for="postContent" class="block text-gray-700 text-sm font-bold mb-2">Content</label>
+                    <textarea id="postContent" name="postContent" rows="6" class="shadow appearance-none border rounded-md w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-300" placeholder="Share your thoughts, case, or question here..." required></textarea>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" id="cancelPostBtn" class="bg-gray-300 text-gray-800 px-6 py-2 rounded-md mr-3 hover:bg-gray-400 transition duration-200 ease-in-out">Cancel</button>
+                    <button type="submit" class="bg-blue-500 text-white px-6 py-2 rounded-md shadow-md hover:bg-blue-600 transition duration-200 ease-in-out transform hover:scale-105">Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000'; // Replace with your backend URL if different
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginModal = document.getElementById('loginModal');
+            const registerModal = document.getElementById('registerModal');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const loginError = document.getElementById('loginError');
+            const registerError = document.getElementById('registerError');
+            const showRegisterBtn = document.getElementById('showRegister');
+            const showLoginBtn = document.getElementById('showLogin');
+            const closeRegisterModalBtn = document.getElementById('closeRegisterModalBtn');
+
+            const loggedInUserName = document.getElementById('loggedInUserName');
+            const logoutBtn = document.getElementById('logoutBtn');
+
+            const postsContainer = document.getElementById('postsContainer');
+            const loadingPosts = document.getElementById('loadingPosts');
+            const postsError = document.getElementById('postsError');
+            const noPosts = document.getElementById('noPosts');
+
+            const createPostModal = document.getElementById('createPostModal');
+            const createPostBtns = document.querySelectorAll('#createPostBtnHeader, #createPostBtnMobile, #createPostBtnSidebar');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const cancelPostBtn = document.getElementById('cancelPostBtn');
+            const newPostForm = document.getElementById('newPostForm');
+
+            const menuToggle = document.getElementById('menuToggle');
+            const closeMenu = document.getElementById('closeMenu');
+            const leftSidebar = document.getElementById('leftSidebar');
+
+            let accessToken = localStorage.getItem('accessToken');
+            let currentUserEmail = localStorage.getItem('currentUserEmail');
+
+            // --- Authentication and User Management ---
+
+            function showModal(modal) {
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            }
+
+            function hideModal(modal) {
+                modal.style.display = 'none';
+                document.body.style.overflow = ''; // Restore background scrolling
+                loginError.style.display = 'none';
+                registerError.style.display = 'none';
+            }
+
+            function updateUIForAuth() {
+                if (accessToken) {
+                    loggedInUserName.textContent = currentUserEmail || 'Dr. User'; // Display email if available, else generic
+                    hideModal(loginModal);
+                    hideModal(registerModal);
+                    fetchPosts(); // Fetch posts after successful login
+                } else {
+                    loggedInUserName.textContent = 'Guest';
+                    postsContainer.innerHTML = ''; // Clear posts if not logged in
+                    noPosts.style.display = 'none';
+                    showModal(loginModal); // Show login modal if no token
+                }
+            }
+
+            // Login
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = e.target.email.value;
+                const password = e.target.password.value;
+
+                const formData = new URLSearchParams();
+                formData.append('username', email); // FastAPI expects 'username' for OAuth2PasswordRequestForm
+                formData.append('password', password);
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/login`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: formData.toString(),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Login failed');
+                    }
+
+                    const data = await response.json();
+                    accessToken = data.access_token;
+                    localStorage.setItem('accessToken', accessToken);
+                    localStorage.setItem('currentUserEmail', email); // Store user email
+                    currentUserEmail = email;
+                    updateUIForAuth();
+                } catch (error) {
+                    console.error('Login error:', error);
+                    loginError.textContent = error.message || 'An unexpected error occurred.';
+                    loginError.style.display = 'block';
+                }
+            });
+
+            // Register
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = e.target.email.value;
+                const password = e.target.password.value;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/users/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ email, password }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Registration failed');
+                    }
+
+                    alert('Registration successful! Please login.');
+                    hideModal(registerModal);
+                    showModal(loginModal); // Show login modal after successful registration
+                } catch (error) {
+                    console.error('Registration error:', error);
+                    registerError.textContent = error.message || 'An unexpected error occurred.';
+                    registerError.style.display = 'block';
+                }
+            });
+
+            // Logout
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('currentUserEmail');
+                accessToken = null;
+                currentUserEmail = null;
+                updateUIForAuth(); // Update UI to reflect logged-out state
+            });
+
+            // Toggle between login and register modals
+            showRegisterBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideModal(loginModal);
+                showModal(registerModal);
+            });
+
+            showLoginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                hideModal(registerModal);
+                showModal(loginModal);
+            });
+
+            closeRegisterModalBtn.addEventListener('click', () => hideModal(registerModal));
+
+            // --- Post Management and Display ---
+
+            async function fetchPosts() {
+                if (!accessToken) {
+                    console.log("Not logged in. Cannot fetch posts.");
+                    postsContainer.innerHTML = '';
+                    noPosts.style.display = 'none'; // Ensure noPosts is hidden when unauthenticated
+                    return;
+                }
+
+                loadingPosts.style.display = 'block';
+                postsError.style.display = 'none';
+                postsContainer.innerHTML = ''; // Clear previous posts
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/posts`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Failed to fetch posts');
+                    }
+
+                    const posts = await response.json();
+                    loadingPosts.style.display = 'none';
+
+                    if (posts.length === 0) {
+                        noPosts.style.display = 'block';
+                    } else {
+                        noPosts.style.display = 'none';
+                        posts.forEach(post => {
+                            const postElement = createPostElement(post);
+                            postsContainer.appendChild(postElement);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Error fetching posts:', error);
+                    loadingPosts.style.display = 'none';
+                    postsError.textContent = `Error loading posts: ${error.message}`;
+                    postsError.style.display = 'block';
+                }
+            }
+
+            function createPostElement(post) {
+                const postElement = document.createElement('div');
+                postElement.className = 'bg-white rounded-lg shadow-md p-4 mb-4 border border-gray-200 hover:border-blue-300 transition duration-200 ease-in-out';
+                postElement.setAttribute('data-post-id', post.id);
+
+                const createdDate = new Date(post.created_at);
+                const timeAgo = getTimeAgo(createdDate);
+
+                // Note: The backend PostSummaryResponse schema doesn't include 'community' or 'hasImage/imageUrl'
+                // For 'community', we'll use a placeholder or derive if possible (e.g., from search/filter in future)
+                // For 'hasImage/imageUrl', the backend doesn't support image uploads in the current schema.
+                // The 'likes' field is available in PostSummaryResponse.
+                postElement.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="flex flex-col items-center mr-4 mt-1">
+                            <button class="vote-btn upvote-btn text-gray-400 hover:text-blue-500 transition duration-150 ease-in-out focus:outline-none" data-id="${post.id}" data-direction="true">
+                                <i class="fas fa-chevron-up text-xl"></i>
+                            </button>
+                            <span class="font-bold text-gray-700 text-lg" data-votes="${post.id}">${post.likes}</span>
+                            <button class="vote-btn downvote-btn text-gray-400 hover:text-red-500 transition duration-150 ease-in-out focus:outline-none" data-id="${post.id}" data-direction="false">
+                                <i class="fas fa-chevron-down text-xl"></i>
+                            </button>
+                        </div>
+
+                        <div class="flex-1">
+                            <div class="flex items-center text-sm text-gray-500 mb-2">
+                                <span class="font-semibold text-blue-600 hover:underline cursor-pointer">r/MedForum</span> <span class="mx-2">•</span>
+                                <span>Posted by u/${post.owner.email.split('@')[0]}</span>
+                                <span class="mx-2">•</span>
+                                <span>${timeAgo}</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-800 mb-2">${post.title}</h3>
+                            <p class="text-gray-700 text-base mb-4">${post.content}</p>
+                            <div class="flex items-center space-x-4 text-gray-500 text-sm">
+                                <button class="flex items-center space-x-1 hover:text-blue-600 transition duration-150 ease-in-out focus:outline-none">
+                                    <i class="fas fa-comment-alt"></i>
+                                    <span>${post.total_reply_count} Comments</span>
+                                </button>
+                                <button class="flex items-center space-x-1 hover:text-blue-600 transition duration-150 ease-in-out focus:outline-none">
+                                    <i class="fas fa-share-alt"></i>
+                                    <span>Share</span>
+                                </button>
+                                <button class="flex items-center space-x-1 hover:text-blue-600 transition duration-150 ease-in-out focus:outline-none">
+                                    <i class="fas fa-bookmark"></i>
+                                    <span>Save</span>
+                                </button>
+                                ${post.owner_id === getUserIdFromToken() ? `
+                                <button class="edit-post-btn flex items-center space-x-1 hover:text-green-600 transition duration-150 ease-in-out focus:outline-none" data-id="${post.id}">
+                                    <i class="fas fa-edit"></i>
+                                    <span>Edit</span>
+                                </button>
+                                <button class="delete-post-btn flex items-center space-x-1 hover:text-red-600 transition duration-150 ease-in-out focus:outline-none" data-id="${post.id}">
+                                    <i class="fas fa-trash"></i>
+                                    <span>Delete</span>
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Add event listeners for vote buttons
+                postElement.querySelectorAll('.vote-btn').forEach(button => {
+                    button.addEventListener('click', handleVote);
+                });
+
+                // Add event listeners for edit/delete buttons
+                postElement.querySelector('.edit-post-btn')?.addEventListener('click', (event) => openEditPostModal(parseInt(event.currentTarget.dataset.id)));
+                postElement.querySelector('.delete-post-btn')?.addEventListener('click', (event) => deletePost(parseInt(event.currentTarget.dataset.id)));
+
+                return postElement;
+            }
+
+            async function handleVote(event) {
+                if (!accessToken) {
+                    alert('Please log in to vote.');
+                    showModal(loginModal);
+                    return;
+                }
+
+                const postId = parseInt(event.currentTarget.dataset.id);
+                const direction = event.currentTarget.dataset.direction === 'true'; // Convert string to boolean
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/posts/${postId}/vote/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify({ post_id: postId, direction: direction }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Vote failed');
+                    }
+
+                    // Update the vote count on the UI without re-fetching all posts
+                    const votesSpan = document.querySelector(`[data-votes="${postId}"]`);
+                    let currentVotes = parseInt(votesSpan.textContent);
+                    if (direction) {
+                        // If it was a like, increment. The backend handles conflict, so UI only updates on success.
+                        currentVotes++;
+                    } else {
+                        // If it was an unlike, decrement. The backend handles if vote existed.
+                        currentVotes--;
+                    }
+                    votesSpan.textContent = currentVotes;
+
+                    console.log('Vote successful!');
+                } catch (error) {
+                    console.error('Error voting:', error);
+                    alert(error.message || 'An error occurred while voting.');
+                }
+            }
+
+            function getTimeAgo(date) {
+                const seconds = Math.floor((new Date() - date) / 1000);
+                let interval = seconds / 31536000;
+                if (interval > 1) return Math.floor(interval) + " years ago";
+                interval = seconds / 2592000;
+                if (interval > 1) return Math.floor(interval) + " months ago";
+                interval = seconds / 86400;
+                if (interval > 1) return Math.floor(interval) + " days ago";
+                interval = seconds / 3600;
+                if (interval > 1) return Math.floor(interval) + " hours ago";
+                interval = seconds / 60;
+                if (interval > 1) return Math.floor(interval) + " minutes ago";
+                return Math.floor(seconds) + " seconds ago";
+            }
+
+            // Function to decode JWT and get user ID
+            function getUserIdFromToken() {
+                if (!accessToken) return null;
+                try {
+                    const base64Url = accessToken.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    const payload = JSON.parse(jsonPayload);
+                    return payload.user_id; // Assuming user_id is in the token payload
+                } catch (e) {
+                    console.error("Error decoding token:", e);
+                    return null;
+                }
+            }
+
+            // Create Post Modal functionality
+            function openCreatePostModal() {
+                if (!accessToken) {
+                    alert('Please log in to create a post.');
+                    showModal(loginModal);
+                    return;
+                }
+                createPostModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeCreatePostModal() {
+                createPostModal.style.display = 'none';
+                document.body.style.overflow = '';
+                newPostForm.reset(); // Clear form fields
+            }
+
+            createPostBtns.forEach(btn => btn.addEventListener('click', openCreatePostModal));
+            closeModalBtn.addEventListener('click', closeCreatePostModal);
+            cancelPostBtn.addEventListener('click', closeCreatePostModal);
+            createPostModal.addEventListener('click', (event) => {
+                if (event.target === createPostModal) {
+                    closeCreatePostModal();
+                }
+            });
+
+            // Handle new post submission
+            newPostForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const title = document.getElementById('postTitle').value;
+                const content = document.getElementById('postContent').value;
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/posts/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify({ title, content }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Failed to create post');
+                    }
+
+                    alert('Post created successfully!');
+                    closeCreatePostModal();
+                    fetchPosts(); // Re-fetch posts to display the new one
+                } catch (error) {
+                    console.error('Error creating post:', error);
+                    alert(error.message || 'An error occurred while creating the post.');
+                }
+            });
+
+            // Delete Post
+            async function deletePost(postId) {
+                if (!confirm('Are you sure you want to delete this post?')) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                        },
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Failed to delete post');
+                    }
+
+                    alert('Post deleted successfully!');
+                    fetchPosts(); // Re-fetch posts to remove the deleted one
+                } catch (error) {
+                    console.error('Error deleting post:', error);
+                    alert(error.message || 'An error occurred while deleting the post.');
+                }
+            }
+
+            // Edit Post (Basic implementation - will open the create modal pre-filled)
+            function openEditPostModal(postId) {
+                const postElement = document.querySelector(`[data-post-id="${postId}"]`);
+                if (!postElement) return;
+
+                const title = postElement.querySelector('h3').textContent;
+                const content = postElement.querySelector('p').textContent;
+
+                document.getElementById('postTitle').value = title;
+                document.getElementById('postContent').value = content;
+
+                document.getElementById('newPostForm').setAttribute('data-editing-post-id', postId);
+                document.querySelector('#newPostForm button[type="submit"]').textContent = 'Update Post';
+                document.querySelector('#createPostModal h2').textContent = 'Edit Post';
+
+                openCreatePostModal();
+            }
+
+            // Modify newPostForm submit to handle updates if data-editing-post-id is present
+            newPostForm.removeEventListener('submit', newPostForm._originalSubmitHandler); // Remove previous listener if exists
+            newPostForm._originalSubmitHandler = async function(event) {
+                event.preventDefault();
+                const title = document.getElementById('postTitle').value;
+                const content = document.getElementById('postContent').value;
+                const editingPostId = this.getAttribute('data-editing-post-id');
+
+                let url = `${API_BASE_URL}/posts/`;
+                let method = 'POST';
+
+                if (editingPostId) {
+                    url = `${API_BASE_URL}/posts/${editingPostId}`;
+                    method = 'PUT';
+                }
+
+                try {
+                    const response = await fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${accessToken}`,
+                        },
+                        body: JSON.stringify({ title, content }),
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.detail || 'Failed to save post');
+                    }
+
+                    alert(`Post ${editingPostId ? 'updated' : 'created'} successfully!`);
+                    closeCreatePostModal();
+                    this.removeAttribute('data-editing-post-id'); // Clear editing state
+                    document.querySelector('#newPostForm button[type="submit"]').textContent = 'Post'; // Reset button text
+                    document.querySelector('#createPostModal h2').textContent = 'Create New Post'; // Reset modal title
+                    fetchPosts(); // Re-fetch posts to display changes
+                } catch (error) {
+                    console.error(`Error ${editingPostId ? 'updating' : 'creating'} post:`, error);
+                    alert(error.message || `An error occurred while ${editingPostId ? 'updating' : 'creating'} the post.`);
+                }
+            };
+            newPostForm.addEventListener('submit', newPostForm._originalSubmitHandler);
+
+
+            // --- Mobile menu toggle functionality ---
+            menuToggle.addEventListener('click', () => {
+                leftSidebar.classList.remove('-translate-x-full');
+                leftSidebar.classList.add('translate-x-0');
+                const overlay = document.createElement('div');
+                overlay.id = 'sidebarOverlay';
+                overlay.className = 'fixed inset-0 bg-black opacity-50 z-10 lg:hidden';
+                document.body.appendChild(overlay);
+                overlay.addEventListener('click', () => {
+                    closeMobileMenu();
+                });
+            });
+
+            closeMenu.addEventListener('click', () => {
+                closeMobileMenu();
+            });
+
+            function closeMobileMenu() {
+                leftSidebar.classList.remove('translate-x-0');
+                leftSidebar.classList.add('-translate-x-full');
+                const overlay = document.getElementById('sidebarOverlay');
+                if (overlay) {
+                    overlay.remove();
+                }
+            }
+
+            // Initial UI setup
+            updateUIForAuth(); // Check for existing token and update UI
+        });
+    </script>
+</body>
+</html>
