@@ -77,7 +77,6 @@ class TokenData(BaseModel):
         orm_mode = True
 
 class Vote(BaseModel):
-    post_id: int
     direction: bool # True for upvote, False for downvote
 
     class Config:
