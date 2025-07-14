@@ -103,8 +103,8 @@ def create_reply(id: int, post: schemas.PostCreate, db: Session = Depends(get_db
 
     original_post.direct_reply_count += 1  # type: ignore # Increment the direct reply count of the original post
     
-    ancestor = original_post
-    while ancestor.parent:  # type: ignore # Traverse up to the root post
+    ancestor = original_post.parent
+    while ancestor:  # type: ignore # Traverse up to the root post
         ancestor.total_reply_count += 1  # type: ignore # Increment the total reply count
         ancestor = ancestor.parent  # type: ignore # Move to the parent post
 
