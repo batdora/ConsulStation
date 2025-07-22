@@ -26,6 +26,9 @@ class PostBase(BaseModel):
     content: str
     published: bool = True
 
+class Reply(BaseModel):
+    content: str
+
 class PostCreate(PostBase):
     pass
 

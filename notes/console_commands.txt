@@ -1,6 +1,6 @@
 If you closed VS use this first to activate venv:
 
-source venvFastAPI/bin/activate
+source venv/bin/activate
 
 Use this to start the API server:
 

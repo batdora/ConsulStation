@@ -37,6 +37,7 @@ class User(Base):
     email = Column(String, unique=True, nullable=False)
     password = Column(String, nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+    badge_points = Column(Integer, nullable=False, server_default=text("0")) 
 
     # Relationships
     posts = relationship("Post", foreign_keys="[Post.owner_id]", back_populates="owner")
@@ -46,10 +47,11 @@ class User(Base):
 class Vote(Base):
     __tablename__ = "votes"
 
+    id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
     post_id = Column(Integer, ForeignKey("posts.id", ondelete="CASCADE"), primary_key=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
-    like_by_owner = Column(Boolean, default=False)  # Indicates if the post owner liked their own post
+    like_by_owner = Column(Boolean, default=False)  # Indicates if the post owner liked the reply (for badge points)
     
     # Relationships
     user = relationship("User")

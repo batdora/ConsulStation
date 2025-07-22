@@ -30,12 +30,13 @@ def vote(id: int, vote: schemas.Vote, db: Session = Depends(get_db), current_use
         
         # Create a new vote
 
-        # Check if the user is the owner of the post
-        if post.owner_id == current_user.id:  # type: ignore
+        # Check if the user is the owner of the root post
+        if post.original_post_owner_id == current_user.id and post.reply_to:  # type: ignore
             # If the user is the owner, set like_by_owner to True
             new_vote = models.Vote(post_id=id, user_id=current_user.id, like_by_owner=True) # type: ignore
+            post.owner.badge_points += 1
         else:
-            # If the user is not the owner, set like_by_owner to False
+            # If the user is not the owner or the owner likes their own post/reply set like_by_owner to False
             new_vote = models.Vote(post_id=id, user_id=current_user.id, like_by_owner=False) # type: ignore
         
         post.likes += 1 # type: ignore
@@ -48,6 +49,9 @@ def vote(id: int, vote: schemas.Vote, db: Session = Depends(get_db), current_use
         if not vote_query:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="You have not liked this post")
         
+        if vote_query.like_by_owner: # type: ignore
+            post.owner.badge_points -= 1
+
         post.likes -= 1 # type: ignore
 
         # Delete the vote

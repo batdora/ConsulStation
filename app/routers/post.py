@@ -86,7 +86,7 @@ def create_post(post: schemas.PostCreate, db: Session = Depends(get_db), current
 
 # POST a reply to a post
 @router.post("/{id}/reply", status_code=status.HTTP_201_CREATED, response_model=schemas.PostDetailResponse)
-def create_reply(id: int, post: schemas.PostCreate, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
+def create_reply(id: int, post: schemas.Reply, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
     original_post = db.query(models.Post).filter(models.Post.id == id).first()
     
     # Check if the original post exists
@@ -95,6 +95,7 @@ def create_reply(id: int, post: schemas.PostCreate, db: Session = Depends(get_db
     
     # Create a new post as a reply
     new_reply = models.Post(**post.model_dump())
+    new_reply.title = "Reply" # type: ignore
     new_reply.owner_id = current_user.id # type: ignore
     new_reply.reply_to = id  # type: ignore # Set the reply_to to the original post's id
     new_reply.original_post_owner_id = original_post.owner_id  # Set the original post's owner id
@@ -102,7 +103,8 @@ def create_reply(id: int, post: schemas.PostCreate, db: Session = Depends(get_db
     db.add(new_reply)
 
     original_post.direct_reply_count += 1  # type: ignore # Increment the direct reply count of the original post
-    
+    original_post.total_reply_count += 1 # type: ignore
+        
     ancestor = original_post.parent
     while ancestor:  # type: ignore # Traverse up to the root post
         ancestor.total_reply_count += 1  # type: ignore # Increment the total reply count
