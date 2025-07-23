@@ -1,7 +1,6 @@
-from hmac import new
 from .. import models, schemas, oath2
 from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter
-from sqlalchemy.orm import Session, selectinload, joinedload
+from sqlalchemy.orm import Session, selectinload
 from sqlalchemy import func, or_
 from ..database import get_db
 from typing import List, Optional
@@ -70,18 +69,29 @@ def get_post(id: int, db: Session = Depends(get_db), current_user: int = Depends
 
 
 
-# POST a new post
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostResponse)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.PostSummaryResponse)
 def create_post(post: schemas.PostCreate, db: Session = Depends(get_db), current_user: int = Depends(oath2.get_current_user)):
-    new_post = models.Post(**post.model_dump())
-    
-    # Set the owner_id to the current user's id
-    new_post.owner_id = current_user.id # type: ignore
-    new_post.original_post_owner_id = current_user.id # type: ignore
+    # 1. Extract and validate channel IDs
+    channel_ids = post.channel_ids
+    channels = db.query(models.Channel).filter(models.Channel.id.in_(channel_ids)).all()
 
+    if len(channels) != len(channel_ids):
+        raise HTTPException(status_code=400, detail="Invalid channel IDs")
+
+    # 2. Prepare post data (excluding channel_ids)
+    post_data = post.model_dump()
+    post_data.pop("channel_ids")
+
+    new_post = models.Post(**post_data)
+    new_post.channels = channels
+    new_post.owner_id = current_user.id  # type: ignore
+    new_post.original_post_owner_id = current_user.id  # type: ignore
+
+    # 3. Commit to database
     db.add(new_post)
     db.commit()
     db.refresh(new_post)
+
     return new_post
 
 # POST a reply to a post
@@ -96,6 +106,7 @@ def create_reply(id: int, post: schemas.Reply, db: Session = Depends(get_db), cu
     # Create a new post as a reply
     new_reply = models.Post(**post.model_dump())
     new_reply.title = "Reply" # type: ignore
+    new_reply.channels = original_post.channels  # type: ignore # Use the same channels as the original post
     new_reply.owner_id = current_user.id # type: ignore
     new_reply.reply_to = id  # type: ignore # Set the reply_to to the original post's id
     new_reply.original_post_owner_id = original_post.owner_id  # Set the original post's owner id

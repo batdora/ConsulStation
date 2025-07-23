@@ -1,10 +1,21 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, TIMESTAMP, text
+from venv import create
+from sqlalchemy import Column, ForeignKey, Integer, String, Boolean, TIMESTAMP, text, Table
 from sqlalchemy.orm import relationship
+from sqlmodel import desc
 
 from app.routers import vote
 from .database import Base
 
 print("Models loaded")
+
+# Association table
+post_channels = Table(
+    'post_channels',
+    Base.metadata,
+    Column('post_id', ForeignKey('posts.id'), primary_key=True),
+    Column('channel_id', ForeignKey('channels.id'), primary_key=True)
+)
+
 
 class Post(Base):
     __tablename__ = "posts"
@@ -21,6 +32,8 @@ class Post(Base):
     total_reply_count  = Column(Integer, nullable=False, default=0)
     likes = Column(Integer, nullable=False, default=0)  # Default to 0 if no votes are found
     
+
+
     # Relationships
     owner = relationship("User", foreign_keys= [owner_id], back_populates="posts")
     original_post_owner = relationship("User", foreign_keys=[original_post_owner_id], back_populates="original_posts")
@@ -28,6 +41,7 @@ class Post(Base):
     parent   = relationship("Post",remote_side=[id],back_populates="replies")
     replies  = relationship("Post",back_populates="parent",cascade="all, delete-orphan")
     votes = relationship("Vote", back_populates="post", cascade="all, delete-orphan")
+    channels = relationship("Channel", secondary= post_channels, back_populates="posts")
 
 
 class User(Base):
@@ -56,3 +70,14 @@ class Vote(Base):
     # Relationships
     user = relationship("User")
     post = relationship("Post")
+
+class Channel(Base):
+    __tablename__ = "channels"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    description = Column(String, nullable=False)
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
+
+    # Relationships
+    posts = relationship("Post", secondary= post_channels, back_populates="channels")

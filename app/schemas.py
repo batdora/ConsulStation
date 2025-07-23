@@ -21,10 +21,38 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class ChannelBase(BaseModel):
+    name: str
+
+
+class ChannelCreate(ChannelBase):
+    name: str
+    description: str
+
+    class Config:
+        orm_mode = True
+
+class ChannelResponse(ChannelBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class ChannelDetailResponse(ChannelResponse):
+    description: str
+    posts: List['PostSummaryResponse'] = []
+
+
+    class Config: # type: ignore
+        orm_mode = True
+
+
 class PostBase(BaseModel):
     title: str
     content: str
     published: bool = True
+    channel_ids: List[int]
 
 class Reply(BaseModel):
     content: str
@@ -51,6 +79,7 @@ class PostSummaryResponse(BaseModel):
     published: bool
     created_at: datetime
     owner: UserResponse
+    channels: List[ChannelResponse] # List of channels associated with the post
 
     likes: int = 0  # Default to 0 if no votes are found
     direct_reply_count: int
@@ -84,3 +113,6 @@ class Vote(BaseModel):
 
     class Config:
         orm_mode = True
+
+ChannelDetailResponse.update_forward_refs()
+PostDetailResponse.update_forward_refs()

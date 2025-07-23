@@ -29,3 +29,6 @@ git pull origin main
 
 Dont forget to switch to dev branch before making changes:
 git checkout dev
+
+For frontend server, use this to build the frontend:
+python3 -m http.server 5500
